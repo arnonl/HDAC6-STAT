@@ -9,11 +9,14 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+Detailes on the github repository:  
+echo "# HDAC6-STAT" >> README.md  
+git init  
+git add README.md  
+git commit -m "first commit"  
+git remote add origin https://github.com/arnonl/HDAC6-STAT.git  
+git push -u origin master  
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r dataPreparation}
 library(ggplot2)
@@ -96,8 +99,9 @@ colnames(longDataBeforeHFD)
 # The very basic model with no treatment, random intercept and slope
 unconditional.growth.mod <- lmer(weight ~ (numTime + I(numTime^2)) + 
                                      ((numTime + I(numTime^2)) | mouse), data = longDataBeforeHFD)
-pretty_lme <- prettify(unconditional.growth.mod)
-kable(pretty_lme)
+# Unfortunatly cannot use it with lmer models -->
+# pretty_lme <- prettify(unconditional.growth.mod) -->
+# kable(pretty_lme) -->
 # 
 
 # The very basic model with no treatment, random slope only
@@ -112,7 +116,7 @@ anova(update(unconditional.growth.mod, REML=FALSE), update(unconditional.growth.
 
 ```{r plotInteraction}
 # Point=True force the graph to show “dot-and-whisker” over “line-and-ribbon”
-interplot(m = <modelName>, var1 = <xAxisVar>, var2 = <yAxisVar>, ci = .9, point = T)
+# interplot(m = <modelName>, var1 = <xAxisVar>, var2 = <yAxisVar>, ci = .9, point = T) -->
 
 ```
 
