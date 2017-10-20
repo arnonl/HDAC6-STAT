@@ -1,0 +1,118 @@
+---
+title: "HDAC6-Weight-gain-modeling"
+author: "Arnon D. Lieber"
+date: "10/19/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r dataPreparation}
+library(ggplot2)
+library(reshape)
+library(knitr)
+
+##### Set parameters #####
+
+relativeGain <- F
+tickEvery <- 20
+
+genderTypes <- c("Males", "Females")
+names(genderTypes) <- c("M","F")
+
+# Loads data into R from excel
+# 
+uDir <- "/Users/Arnon/Post_at_NYU/Projects/Util_codes/"
+dataDir <- "/Users/Arnon/Post_at_NYU/Projects/HDAC_study/03_processedData"
+
+data <- read.csv(file = file.path(dataDir, "all_mice_statVsControl.csv"), header = T)
+#
+longData <- melt.data.frame(
+    data, id.vars = c("mouse", "gender", "treatment", "cage", "genotype"))
+colnames(longData) <- c(colnames(longData)[1:5], "week", "weight")
+head(longData)
+
+# Add numeric time
+# patterns within parenthesis are captured and assigned to \\1, \\2, etc. 
+# Print out only \\2 which has the numeric part
+longData$numTime <- as.numeric(sub("(w)(.)", "\\2", as.character(longData$week), perl = TRUE))
+
+# write.csv(file = file.path(dataDir,"all_mice_longFormat.csv"), longData)
+# longData <- read.csv(file = file.path(dataDir,"all_mice_longFormat.csv"), header = T)
+
+# See how many cases we have for each time point
+table(longData$week)
+
+# Divide here every category with the first observation of time=0 and save it under wgRatio
+# First, let's see how many observation we have for each week
+if (var(table(longData$week)) == 0) {
+    nEl <- max(table(longData$week))
+} else {
+    stop("The number of elements are not equal across groups")
+}
+
+str(longData)
+longData$cage <- factor(longData$cage)
+# Add an indication for before and after switch to HFD
+longData$onHFD <- factor(c(rep("Before", sum(longData$numTime<8)), rep("After", sum(longData$numTime>=8))))
+
+# Subset to before HFD
+longDataBeforeHFD <- subset(longData, onHFD=="Before")
+# Subset to HFD only
+longDataOnHFD <- subset(longData, longData$numTime >= 8)
+
+```
+
+## Now here are the comparisons of the different models - Including Plots
+
+#### Modelling males
+
+```{r modelingMales , echo=FALSE}
+
+library("devtools")
+install_github("hofnerb/papeR")
+library(papeR)
+
+packageVersion("lme4")
+library(lme4, warn.conflicts = F)
+
+# Ploynomal model
+######################
+print("Dataset head:")
+head(longDataBeforeHFD)
+print("Dataset tail:")
+tail(longDataBeforeHFD)
+colnames(longDataBeforeHFD)
+
+#== Test 1 ==#
+# The very basic model with no treatment, random intercept and slope
+unconditional.growth.mod <- lmer(weight ~ (numTime + I(numTime^2)) + 
+                                     ((numTime + I(numTime^2)) | mouse), data = longDataBeforeHFD)
+pretty_lme <- prettify(unconditional.growth.mod)
+kable(pretty_lme)
+# 
+
+# The very basic model with no treatment, random slope only
+unconditional.growth.ranSlope <- lmer(weight ~ (numTime + I(numTime^2)) + 
+                                     (0 + (numTime + I(numTime^2)) | mouse), data = longDataBeforeHFD)
+# Comparing unconditional model with random slope and intercept with unconditional model with only random slope
+anova(update(unconditional.growth.mod, REML=FALSE), update(unconditional.growth.ranSlope, REML=FALSE))
+
+# Conclusion - the random intercept term has a significant effect on the model 
+
+```
+
+```{r plotInteraction}
+# Point=True force the graph to show “dot-and-whisker” over “line-and-ribbon”
+interplot(m = <modelName>, var1 = <xAxisVar>, var2 = <yAxisVar>, ci = .9, point = T)
+
+```
+
